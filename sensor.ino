@@ -87,6 +87,20 @@ void setup() {
 
 
 }
+
+void cvtToHeatmap(distance) {
+  if (distance < 30) {
+    Serial.print("□");
+  } else if (distance < 60) {
+    Serial.print("░");
+  } else if (distance < 90) {
+    Serial.print("▒");
+  } else if (distance < 120) {
+    Serial.print("▓");
+  } else if (distance < 150) {
+    Serial.print("█")
+  }
+}
  
 void loop() {
 
