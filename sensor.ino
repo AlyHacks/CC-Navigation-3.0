@@ -6,6 +6,11 @@
 #include <iostream>
 #include <algorithm>
 
+String low = "░";
+String medium = "▒";
+String high = "▓";
+String veryHigh = "█";
+
 #define I2C_SDA D4
 #define I2C_SCL D5
 
@@ -87,20 +92,6 @@ void setup() {
 
 
 }
-
-void cvtToHeatmap(distance) {
-  if (distance < 30) {
-    Serial.print("□");
-  } else if (distance < 60) {
-    Serial.print("░");
-  } else if (distance < 90) {
-    Serial.print("▒");
-  } else if (distance < 120) {
-    Serial.print("▓");
-  } else if (distance < 150) {
-    Serial.print("█")
-  }
-}
  
 void loop() {
 
@@ -123,9 +114,21 @@ void loop() {
           if (status == 5 && distance > 0 && distance < minimum) {
             minimum = distance;
           }
-          Serial.print(millis());
-          Serial.print(" minimum=");
-          Serial.println(minimum);
+          //Serial.print(millis());
+          //Serial.print(" minimum=");
+          //Serial.println(minimum);
+
+          if (distance < 250) {
+            Serial.print(low);
+          } else if (distance < 500) {
+            Serial.print(medium);
+          } else if (distance < 750) {
+            Serial.print(high);
+          } else if (distance < 1000) {
+            Serial.print(veryHigh);
+          } else {
+            Serial.print("x");
+          }
         }
 
       }
