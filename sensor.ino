@@ -33,8 +33,11 @@ esp_now_peer_info_t peerInfo;
 
 // callback when data is sent
 void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
+  /*
+  //temporarily removed for heatmap printing
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  */
 }
  
 void setup() {
@@ -118,20 +121,22 @@ void loop() {
           //Serial.print(" minimum=");
           //Serial.println(minimum);
 
-          if (distance < 250) {
-            Serial.print(low);
-          } else if (distance < 500) {
-            Serial.print(medium);
-          } else if (distance < 750) {
-            Serial.print(high);
-          } else if (distance < 1000) {
+          if (distance < 500) {
             Serial.print(veryHigh);
+          } else if (distance < 1000) {
+            Serial.print(high);
+          } else if (distance < 1500) {
+            Serial.print(medium);
+          } else if (distance >= 1500) {
+            Serial.print(low);
           } else {
             Serial.print("x");
           }
         }
+        Serial.println();
 
       }
+      Serial.println();
 
         // Send message via ESP-NOW
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &minimum, sizeof(minimum));
