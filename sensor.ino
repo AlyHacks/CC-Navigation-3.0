@@ -6,10 +6,10 @@
 #include <iostream>
 #include <algorithm>
 
-String low = "░";
-String medium = "▒";
-String high = "▓";
-String veryHigh = "█";
+String veryFar = "░";
+String far = "▒";
+String near = "▓";
+String veryNear = "█";
 
 #define I2C_SDA D4
 #define I2C_SCL D5
@@ -122,13 +122,13 @@ void loop() {
           //Serial.println(minimum);
 
           if (distance < 500) {
-            Serial.print(veryHigh);
+            Serial.print(veryNear);
           } else if (distance < 1000) {
-            Serial.print(high);
+            Serial.print(near);
           } else if (distance < 1500) {
-            Serial.print(medium);
+            Serial.print(far);
           } else if (distance >= 1500) {
-            Serial.print(low);
+            Serial.print(veryFar);
           } else {
             Serial.print("x");
           }
