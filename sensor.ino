@@ -6,6 +6,10 @@
 #include <iostream>
 #include <algorithm>
 
+unsigned long range1;
+unsigned long range2;
+unsigned long range;
+
 String veryFar = "░";
 String far = "▒";
 String near = "▓";
@@ -53,6 +57,8 @@ void setup() {
   Wire.begin();
   Wire.setClock(400000);
 
+  Serial.println('Range'+ range1);
+
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
@@ -98,15 +104,19 @@ void setup() {
  
 void loop() {
 
+  range1 = 0;
+  range2 = 0;
+
   int minimum = 1000000; //fake value to be replaced in the minimum logic
-  int lastDataTimes;
   //Poll sensor for new data
+
+  range1 = millis();
   if (sensor.isDataReady() == true) {
     int noDataCounter = 0;
     if (sensor.getRangingData(&results)) { //Read distance data into array
         //The ST library returns the data transposed from zone mapping shown in datasheet
         //Pretty-print data with increasing y, decreasing x to reflect reality
-      lastDataTimes = millis();
+
       for (int y = 0 ; y <= imageWidth * (imageWidth - 1) ; y += imageWidth) {
         for (int x = imageWidth - 1 ; x >= 0 ; x--) {
 
@@ -121,17 +131,18 @@ void loop() {
           //Serial.print(" minimum=");
           //Serial.println(minimum);
 
-          if (distance < 500) {
+          if (distance < 200) {
             Serial.print(veryNear);
-          } else if (distance < 1000) {
+          } else if (distance < 400) {
             Serial.print(near);
-          } else if (distance < 1500) {
+          } else if (distance < 600) {
             Serial.print(far);
-          } else if (distance >= 1500) {
+          } else if (distance >= 600) {
             Serial.print(veryFar);
           } else {
             Serial.print("x");
           }
+          
         }
         Serial.println();
 
@@ -155,9 +166,13 @@ void loop() {
       if (noDataCounter % 20 == 0) { // every ~2s at 100ms loop delay
       Serial.print(millis());
       Serial.print(" isDataReady false, last good data at ");
-      Serial.println(lastDataTimes);
+      //Serial.println(lastDataTimes);
 
     }
-    delay(100);
+    range2 = millis();
+    range = range2 - range1;
+    Serial.println(range);
+    delay(10);
+
   }
 }
