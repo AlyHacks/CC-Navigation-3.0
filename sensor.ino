@@ -24,8 +24,8 @@ VL53L5CX_ResultsData results;
 int imageResolution = 0; 
 int imageWidth = 0;
 
-// REPLACE with white led MAC address: AC:27:6E:7D:38:40
-uint8_t broadcastAddress[] = {0xAC, 0x27, 0x6E, 0x7E, 0x35, 0x10};
+// REPLACE with white led MAC address: AC:27:6E:7E:A3:A8
+uint8_t broadcastAddress[] = {0xAC, 0x27, 0x6E, 0x7E, 0xA3, 0xA8};
 
 // Structure example to send data
 // Must match the receiver structure
