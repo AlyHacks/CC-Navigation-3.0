@@ -6,8 +6,8 @@
 #include <iostream>
 #include <algorithm>
 
-unsigned long range1;
-unsigned long range2;
+unsigned long startRange;
+unsigned long endRange;
 unsigned long range;
 
 String veryFar = "░";
@@ -24,14 +24,7 @@ VL53L5CX_ResultsData results;
 int imageResolution = 0; 
 int imageWidth = 0;
 
-// REPLACE with white led MAC address: AC:27:6E:7E:A3:A8
 uint8_t broadcastAddress[] = {0xAC, 0x27, 0x6E, 0x7E, 0xA3, 0xA8};
-
-// Structure example to send data
-// Must match the receiver structure
-
-// Create a struct_message called myData
-//struct_message myData;
 
 esp_now_peer_info_t peerInfo;
 
@@ -73,8 +66,7 @@ void setup() {
   memcpy(peerInfo.peer_addr, broadcastAddress, 6);
   peerInfo.channel = 1;  
   peerInfo.encrypt = false;
-  
-  // Add peer        
+         
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add peer");
     return;
@@ -83,12 +75,12 @@ void setup() {
   Serial.println(sensor.getAddress());
 
   Serial.println("Initializing sensor board. This can take up to 10s. Please wait.");
-  if (sensor.begin() == false)
-  {
-  Serial.println(F("Sensor not found - check your wiring. Freezing"));
-  while (1) ;
+
+  if (sensor.begin() == false) {
+    Serial.println(F("Sensor not found - check your wiring. Freezing"));
+    while (1);
   } else {
-  Serial.println("Sensor has successfully begun.");
+    Serial.println("Sensor has successfully begun.");
   }
 
   sensor.setResolution(8*8); //Enable all 64 pads
@@ -97,6 +89,7 @@ void setup() {
   imageWidth = int(sqrt(imageResolution)); //Calculate printing width
 
   sensor.startRanging();
+
   Serial.print("sensor has started ranging.");
 
 
@@ -104,15 +97,14 @@ void setup() {
  
 void loop() {
 
-  range1 = 0;
-  range2 = 0;
+  startRange = millis();
 
-  int minimum = 1000000; //fake value to be replaced in the minimum logic
   //Poll sensor for new data
 
-  range1 = millis();
   if (sensor.isDataReady() == true) {
-    int noDataCounter = 0;
+
+    int minimum = 1000000; //fake value to be replaced in the minimum logic
+    
     if (sensor.getRangingData(&results)) { //Read distance data into array
         //The ST library returns the data transposed from zone mapping shown in datasheet
         //Pretty-print data with increasing y, decreasing x to reflect reality
@@ -150,7 +142,7 @@ void loop() {
       Serial.println();
 
         // Send message via ESP-NOW
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &minimum, sizeof(minimum));
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&minimum, sizeof(minimum));
         
         if (result == ESP_OK) {
           Serial.println("Sent with success");
@@ -169,10 +161,11 @@ void loop() {
       //Serial.println(lastDataTimes);
 
     }
-    range2 = millis();
-    range = range2 - range1;
-    Serial.println(range);
-    delay(10);
+    endRange = millis();
 
+    range = endRange - startRange;
+
+    Serial.println(range);
+    //delay(10);
   }
 }
