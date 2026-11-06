@@ -6,6 +6,15 @@
 #include <iostream>
 #include <algorithm>
 
+unsigned long range1;
+unsigned long range2;
+unsigned long range;
+
+String veryFar = "░";
+String far = "▒";
+String near = "▓";
+String veryNear = "█";
+
 #define I2C_SDA D4
 #define I2C_SCL D5
 
@@ -15,8 +24,8 @@ VL53L5CX_ResultsData results;
 int imageResolution = 0; 
 int imageWidth = 0;
 
-// REPLACE with white led MAC address: AC:27:6E:7D:38:40
-uint8_t broadcastAddress[] = {0xAC, 0x27, 0x6E, 0x7E, 0x35, 0x10};
+// REPLACE with white led MAC address: AC:27:6E:7E:A3:A8
+uint8_t broadcastAddress[] = {0xAC, 0x27, 0x6E, 0x7E, 0xA3, 0xA8};
 
 // Structure example to send data
 // Must match the receiver structure
@@ -28,8 +37,11 @@ esp_now_peer_info_t peerInfo;
 
 // callback when data is sent
 void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
+  /*
+  //temporarily removed for heatmap printing
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  */
 }
  
 void setup() {
@@ -44,6 +56,8 @@ void setup() {
 
   Wire.begin();
   Wire.setClock(400000);
+
+  Serial.println('Range'+ range1);
 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -90,15 +104,19 @@ void setup() {
  
 void loop() {
 
+  range1 = 0;
+  range2 = 0;
+
   int minimum = 1000000; //fake value to be replaced in the minimum logic
-  int lastDataTimes;
   //Poll sensor for new data
+
+  range1 = millis();
   if (sensor.isDataReady() == true) {
     int noDataCounter = 0;
     if (sensor.getRangingData(&results)) { //Read distance data into array
         //The ST library returns the data transposed from zone mapping shown in datasheet
         //Pretty-print data with increasing y, decreasing x to reflect reality
-      lastDataTimes = millis();
+
       for (int y = 0 ; y <= imageWidth * (imageWidth - 1) ; y += imageWidth) {
         for (int x = imageWidth - 1 ; x >= 0 ; x--) {
 
@@ -109,12 +127,27 @@ void loop() {
           if (status == 5 && distance > 0 && distance < minimum) {
             minimum = distance;
           }
-          Serial.print(millis());
-          Serial.print(" minimum=");
-          Serial.println(minimum);
+          //Serial.print(millis());
+          //Serial.print(" minimum=");
+          //Serial.println(minimum);
+
+          if (distance < 200) {
+            Serial.print(veryNear);
+          } else if (distance < 400) {
+            Serial.print(near);
+          } else if (distance < 600) {
+            Serial.print(far);
+          } else if (distance >= 600) {
+            Serial.print(veryFar);
+          } else {
+            Serial.print("x");
+          }
+          
         }
+        Serial.println();
 
       }
+      Serial.println();
 
         // Send message via ESP-NOW
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &minimum, sizeof(minimum));
@@ -133,9 +166,13 @@ void loop() {
       if (noDataCounter % 20 == 0) { // every ~2s at 100ms loop delay
       Serial.print(millis());
       Serial.print(" isDataReady false, last good data at ");
-      Serial.println(lastDataTimes);
+      //Serial.println(lastDataTimes);
 
     }
-    delay(100);
+    range2 = millis();
+    range = range2 - range1;
+    Serial.println(range);
+    delay(10);
+
   }
 }
