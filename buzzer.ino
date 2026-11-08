@@ -16,6 +16,8 @@ unsigned long lastStateChange = 0;
 bool buzzerOn = false;
 bool previousObstacleDetected = false;
 
+int maxBuzzingDistance = 1000;
+
 
 void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
   if (len == sizeof(int)) {
@@ -54,7 +56,7 @@ void loop() {
 
   bool dataIsFresh = (currentLastReceived != 0) && (currentMillis - currentLastReceived) < TIMEOUT;
 
-  bool obstacleDetected = (dataIsFresh) && (currentMinimum <= 500) && (currentMinimum > 0);
+  bool obstacleDetected = (dataIsFresh) && (currentMinimum <= maxBuzzingDistance) && (currentMinimum > 0);
 
   Serial.println(received_minimum);
 
