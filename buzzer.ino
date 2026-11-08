@@ -2,7 +2,7 @@
 #include <WiFi.h>
 #include "esp_wifi.h"
 
-const int BUZZER_PIN = D10;
+const int BUZZER_PIN = D8;
 
 volatile int received_minimum = 1000000; //fake placeholder value
 
@@ -60,41 +60,40 @@ void loop() {
 
   if (obstacleDetected) {
 
+    unsigned long interval;
+
+    if (buzzerOn) {
+      interval = ontime;
+    } else {
+      interval = currentMinimum;
+    }
+
     if (!previousObstacleDetected) { //buzzer is currently OFF
       digitalWrite(BUZZER_PIN, HIGH);
       buzzerOn = true;
       lastStateChange = currentMillis;
     }
     
-    else if (buzzerOn) { //buzzer is currently ON
+    else if (currentMillis - lastStateChange >= interval) { //buzzer is currently ON
 
-      if (currentMillis - lastStateChange >= ontime) {
-        digitalWrite(BUZZER_PIN, LOW);
-        buzzerOn = false;
-        lastStateChange = currentMillis;
-      }
+      buzzerOn = !buzzerOn;
+
+      digitalWrite(BUZZER_PIN, buzzerOn ? HIGH : LOW);
+
+      lastStateChange = currentMillis;
 
     }
+
+  
+  }
 
     //buzzer is currently OFF
 
-    else {
-
-      if (currentMillis - lastStateChange >= currentMinimum) {
-        digitalWrite(BUZZER_PIN, HIGH);
-        buzzerOn = true;
-        lastStateChange = currentMillis;
-      }
-    
-    }
-  }
-
   else {
-    //stop buzzing if no obstacle detected or if data is stale
-    if (buzzerOn) {
-      digitalWrite(BUZZER_PIN, LOW);
-      buzzerOn = false;
-    }
+
+    digitalWrite(BUZZER_PIN, LOW);
+    buzzerOn = false;
+  
   }
 
   previousObstacleDetected = obstacleDetected;

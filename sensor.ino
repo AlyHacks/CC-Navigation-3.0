@@ -85,7 +85,7 @@ void setup() {
   sensor.setResolution(8*8); //Enable all 64 pads
 
   //set measurement frequency
-  if (sensor.setRangingFrequency(15)) {
+  if (sensor.setRangingFrequency(10)) {
     Serial.print("Ranging frequency: ");
     Serial.println(sensor.getRangingFrequency());
   } else {
