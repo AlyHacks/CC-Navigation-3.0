@@ -56,7 +56,7 @@ void loop() {
 
   bool obstacleDetected = (dataIsFresh) && (currentMinimum <= 500) && (currentMinimum > 0);
 
-  //Serial.println(received_minimum);
+  Serial.println(received_minimum);
 
   if (obstacleDetected) {
 
