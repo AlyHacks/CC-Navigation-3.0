@@ -17,7 +17,7 @@ bool buzzerOn = false;
 bool previousObstacleDetected = false;
 
 
-void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
+void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
   if (len == sizeof(int)) {
     int newMinimum;
     memcpy(&newMinimum, incomingData, sizeof(newMinimum));
