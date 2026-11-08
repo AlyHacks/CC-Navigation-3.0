@@ -2,41 +2,46 @@
 #include <WiFi.h>
 #include "esp_wifi.h"
 
-const int LED_PIN = D10;
-int received_minimum;
+const int BUZZER_PIN = D10;
+
+volatile int received_minimum = 1000000; //fake placeholder value
+
 int ontime = 200;
 
-unsigned long lastReceived = 0;
-const unsigned long TIMEOUT = 1000; //milliseconds
+volatile unsigned long lastReceived = 0;
+const unsigned long TIMEOUT = 300; //milliseconds
 
 unsigned long lastStateChange = 0;
+
 bool buzzerOn = false;
+bool previousObstacleDetected = false;
 
 
-void OnDataRecv(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
-  if (len == sizeof(received_minimum)) {
-    memcpy(&received_minimum, incomingData, sizeof(received_minimum));
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
+  if (len == sizeof(int)) {
+    int newMinimum;
+    memcpy(&newMinimum, incomingData, sizeof(newMinimum));
+    received_minimum = newMinimum;
     lastReceived = millis();
   }
 }
 
 void setup() {
-  pinMode(LED_PIN, OUTPUT);
 
   Serial.begin(115200);
-  delay(1000);
 
-  Serial.print("hello from led esp32");
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
 
   WiFi.mode(WIFI_STA);
   esp_wifi_set_ps(WIFI_PS_NONE);
   esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+
   if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
+    Serial.println("ESP-NOW initialization failed.");
     return;
-  } else {
-    Serial.println("success initializing esp-now");
   }
+
   esp_now_register_recv_cb(OnDataRecv);
 }
 
@@ -44,36 +49,54 @@ void loop() {
 
   unsigned long currentMillis = millis();
 
-  bool dataIsFresh = (currentMillis - lastReceived) < TIMEOUT;
+  int currentMinimum = received_minimum;
+  unsigned long currentLastReceived = lastReceived;
 
-  Serial.println(received_minimum);
+  bool dataIsFresh = (currentLastReceived != 0) && (currentMillis - currentLastReceived) < TIMEOUT;
 
-  if (dataIsFresh && received_minimum <= 500 && received_minimum > 0){
+  bool obstacleDetected = (dataIsFresh) && (currentMinimum <= 500) && (currentMinimum > 0);
 
-    if (!buzzerOn) { //buzzer is currently OFF
-      digitalWrite(LED_PIN, HIGH);
+  //Serial.println(received_minimum);
+
+  if (obstacleDetected) {
+
+    if (!previousObstacleDetected) { //buzzer is currently OFF
+      digitalWrite(BUZZER_PIN, HIGH);
       buzzerOn = true;
-      lastStateChange = currentMillis
-    }
-
-    else if (currentMillis - lastStateChange  >= (unsigned long)ontime) { //buzzer is currently ON
-
-      digitalWrite(LED_PIN, LOW);
-      buzzerOn = false;
       lastStateChange = currentMillis;
+    }
+    
+    else if (buzzerOn) { //buzzer is currently ON
+
+      if (currentMillis - lastStateChange >= ontime) {
+        digitalWrite(BUZZER_PIN, LOW);
+        buzzerOn = false;
+        lastStateChange = currentMillis;
+      }
 
     }
 
     //buzzer is currently OFF
 
-  } else {
-    //no valid or fresh obstacle detection
-    if (buzzerOn) {
-      digitalWrite(LED_PIN, LOW);
-      buzzerOn = false;
+    else {
+
+      if (currentMillis - lastStateChange >= currentMinimum) {
+        digitalWrite(BUZZER_PIN, HIGH);
+        buzzerOn = true;
+        lastStateChange = currentMillis;
+      }
+    
     }
-    lastStateChange = currentMillis;
   }
 
-  //delay(100);
+  else {
+    //stop buzzing if no obstacle detected or if data is stale
+    if (buzzerOn) {
+      digitalWrite(BUZZER_PIN, LOW);
+      buzzerOn = false;
+    }
+  }
+
+  previousObstacleDetected = obstacleDetected;
+
 }

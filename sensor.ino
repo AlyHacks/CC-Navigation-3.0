@@ -3,8 +3,9 @@
 #include <Wire.h>
 #include "esp_wifi.h"
 #include <SparkFun_VL53L5CX_Library.h>
-#include <iostream>
-#include <algorithm>
+#include <math.h>
+//#include <iostream>
+//#include <algorithm>
 
 unsigned long startRange;
 unsigned long endRange;
@@ -50,7 +51,7 @@ void setup() {
   Wire.begin();
   Wire.setClock(400000);
 
-  Serial.println('Range'+ range1);
+  //Serial.println('Range'+ range1);
 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -78,94 +79,94 @@ void setup() {
 
   if (sensor.begin() == false) {
     Serial.println(F("Sensor not found - check your wiring. Freezing"));
-    while (1);
-  } else {
-    Serial.println("Sensor has successfully begun.");
+    return;
   }
 
   sensor.setResolution(8*8); //Enable all 64 pads
+
+  //set measurement frequency
+  if (sensor.setRangingFrequency(15)) {
+    Serial.print("Ranging frequency: ");
+    Serial.println(sensor.getRangingFrequency());
+  } else {
+    Serial.println("Failed to set ranging frequency.");
+  }
   
   imageResolution = sensor.getResolution(); //Query sensor for current resolution - either 4x4 or 8x8
   imageWidth = int(sqrt(imageResolution)); //Calculate printing width
 
   sensor.startRanging();
 
-  Serial.print("sensor has started ranging.");
+  //Serial.print("sensor has started ranging.");
 
 
 }
  
 void loop() {
-
-  startRange = millis();
+  //startRange = millis();
 
   //Poll sensor for new data
-
-  if (sensor.isDataReady() == true) {
+  if (sensor.isDataReady()) {
 
     int minimum = 1000000; //fake value to be replaced in the minimum logic
     
-    if (sensor.getRangingData(&results)) { //Read distance data into array
-        //The ST library returns the data transposed from zone mapping shown in datasheet
-        //Pretty-print data with increasing y, decreasing x to reflect reality
+    if (sensor.getRangingData(&results)) {
+      //Read distance data into array
+      //The ST library returns the data transposed from zone mapping shown in datasheet
+      //Pretty-print data with increasing y, decreasing x to reflect reality
 
-      for (int y = 0 ; y <= imageWidth * (imageWidth - 1) ; y += imageWidth) {
-        for (int x = imageWidth - 1 ; x >= 0 ; x--) {
+      /*
+        for (int y = 0 ; y <= imageWidth * (imageWidth - 1) ; y += imageWidth) {
+          for (int x = imageWidth - 1 ; x >= 0 ; x--) {
 
-          int idx = x + y;
-          int distance = results.distance_mm[idx];
-          int status = results.target_status[idx];
+            int idx = x + y;
+            int distance = results.distance_mm[idx];
+            int status = results.target_status[idx];
 
-          if (status == 5 && distance > 0 && distance < minimum) {
-            minimum = distance;
+            if (status == 5 && distance > 0 && distance < minimum) {
+              minimum = distance;
+            }
+            //Serial.print(millis());
+            //Serial.print(" minimum=");
+            //Serial.println(minimum);
+
+            if (distance < 200) {
+              Serial.print(veryNear);
+            } else if (distance < 400) {
+              Serial.print(near);
+            } else if (distance < 600) {
+              Serial.print(far);
+            } else if (distance >= 600) {
+              Serial.print(veryFar);
+            } else {
+              Serial.print("x");
+            }
+            
           }
-          //Serial.print(millis());
-          //Serial.print(" minimum=");
-          //Serial.println(minimum);
+          Serial.println();
 
-          if (distance < 200) {
-            Serial.print(veryNear);
-          } else if (distance < 400) {
-            Serial.print(near);
-          } else if (distance < 600) {
-            Serial.print(far);
-          } else if (distance >= 600) {
-            Serial.print(veryFar);
-          } else {
-            Serial.print("x");
-          }
-          
         }
         Serial.println();
 
+        */
+      
+      for (int i = 0; i < imageResolution; i++) {
+
+        if (results.target_status[i] == 5 && results.distance_mm[i] > 0) {
+          if (results.distance_mm[i] < minimum) {
+            minimum = results.distance_mm[i];
+          }
+        }
       }
-      Serial.println();
+
+
 
         // Send message via ESP-NOW
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&minimum, sizeof(minimum));
         
-        if (result == ESP_OK) {
-          Serial.println("Sent with success");
-        }
-        else {
+        if (result != ESP_OK) {
           Serial.println("Error sending the data");
         }
-
-      } else {
-        Serial.print("error");
-        noDataCounter++;
-      }  
-      if (noDataCounter % 20 == 0) { // every ~2s at 100ms loop delay
-      Serial.print(millis());
-      Serial.print(" isDataReady false, last good data at ");
-      //Serial.println(lastDataTimes);
-
     }
-    endRange = millis();
-
-    range = endRange - startRange;
-
-    Serial.println(range);
-    //delay(10);
   }
 }
